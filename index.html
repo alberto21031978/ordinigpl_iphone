@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ordini GPL">
+<meta name="theme-color" content="#1b64d1">
+<title>Ordini GPL</title>
+<style>
+:root{--bg:#e9eff2;--card:#fff;--ink:#102a36;--mute:#5b7280;--line:#c9d6dc;--accent:#1b64d1;--accent-ink:#fff;--wa:#1faa59;--warn:#d9480f;--hl:#fff3bf}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1b22;--card:#15282f;--ink:#e6f0f3;--mute:#8fa7b2;--line:#2a424b;--accent:#5c9bff;--accent-ink:#06182e;--wa:#34c070;--warn:#ff8a4c;--hl:#4a4217}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+main{margin:0 auto;padding:16px 14px 40px}
+h1{font-size:26px;margin:4px 0 14px}h2{font-size:18px;margin:0 0 10px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+label{display:block;font-weight:600;margin:12px 0 4px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:10px;padding:11px 12px}
+input:focus,select:focus,textarea:focus,button:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+textarea{resize:vertical;min-height:70px}.hl{background:var(--hl)!important}
+.row{display:flex;gap:10px}.row>*{flex:1}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px 16px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+button.sec{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+button.wa{background:var(--wa);color:#fff}button.small{padding:6px 10px;font-size:14px}
+.mic{display:block;width:100%;padding:18px;font-size:19px}
+.mic.on{background:var(--warn);color:#fff;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.7}}@media (prefers-reduced-motion:reduce){.mic.on{animation:none}}
+.status{color:var(--mute);font-size:14px;margin:8px 0 0;min-height:20px}
+.tank{position:relative;height:46px;border:2px solid var(--ink);border-radius:23px;overflow:hidden;margin:6px 0}
+.tank i{position:absolute;inset:0 auto 0 0;width:0;background:var(--accent);transition:width .3s}
+.tank.low i{background:var(--warn)}
+.tank b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;text-shadow:0 0 6px var(--card),0 0 2px var(--card)}
+input[type=range]{padding:0;border:0;accent-color:var(--accent)}
+.ord{border-top:1px solid var(--line);padding:10px 0}.ord:first-of-type{border-top:0}
+.ord .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.ord p{margin:2px 0;color:var(--mute);font-size:15px}.empty{color:var(--mute)}
+summary{cursor:pointer;font-weight:700}
+.bar{display:flex;gap:10px;margin-top:16px}.bar .wa{flex:2}.bar .sec{flex:1}
+/* iPhone: una colonna, barra azioni fissa in basso, bersagli touch grandi */
+.iphone main{max-width:520px;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px));padding-top:calc(16px + env(safe-area-inset-top,0px))}
+.iphone input,.iphone select,.iphone textarea{font-size:17px;padding:13px}
+.iphone .bar{position:fixed;left:0;right:0;bottom:0;margin:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line);z-index:5}
+.iphone .bar button{padding:15px}
+/* Mac: due colonne, form a sinistra, ordini e impostazioni a destra */
+.mac main{max-width:1120px;padding:28px 24px}
+.mac .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;align-items:start}
+.mac section{padding:18px}.mac .col-list{position:sticky;top:16px}
+.mac button{padding:10px 16px}.mac .mic{padding:14px;font-size:17px}
+kbd{font:12px ui-monospace,monospace;border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+</style>
+</head>
+<body class="iphone">
+<main>
+<h1>Ordini GPL</h1>
+<div class="cols">
+<div class="col-form">
+<section>
+  <h2>Detta l’ordine</h2>
+  <button id="mic" class="mic" type="button">🎙️ Avvia registrazione</button>
+  <label for="trascr">Testo dettato (modificabile)</label>
+  <textarea id="trascr" placeholder="Es.: cliente Mario Rossi, telefono 338 1234567, serbatoio al 20 per cento, sconto di 5 centesimi al litro, ordina 800 litri, note: citofono rotto."></textarea>
+  <div class="row" style="margin-top:10px"><button id="applica" class="sec" type="button">Compila i campi</button></div>
+  <p class="status" id="stato" role="status"></p>
+</section>
+<section>
+  <h2>Dati ordine</h2>
+  <label for="nome">Nominativo</label><input id="nome" autocomplete="off">
+  <label for="tel">Numero di telefono</label><input id="tel" type="tel" inputmode="tel" autocomplete="off">
+  <label for="pctNum">Contenuto attuale del serbatoio (%)</label>
+  <div class="tank" id="tank"><i id="fill"></i><b id="pctLbl">—</b></div>
+  <input id="pct" type="range" min="0" max="100" step="1" value="0" aria-label="Percentuale serbatoio">
+  <input id="pctNum" type="number" inputmode="numeric" min="0" max="100" placeholder="%" style="margin-top:6px">
+  <label for="tratt">Trattativa sul prezzo</label>
+  <select id="tratt"><option value="no">Nessuna trattativa</option><option value="si">Sì, c’è una trattativa</option></select>
+  <input id="trattTxt" placeholder="Dettaglio (es. sconto 5 cent/litro)" style="margin-top:8px;display:none">
+  <label for="qta">Quantità ordinata (litri)</label><input id="qta" type="number" inputmode="decimal" min="0" step="any">
+  <label for="note">Note</label><textarea id="note"></textarea>
+  <div class="bar"><button id="reset" class="sec" type="button">Reset campi</button><button id="invia" class="wa" type="button">Invia su WhatsApp</button></div>
+  <p class="status" id="stato2" role="status"></p>
+</section>
+</div>
+<div class="col-list">
+<section><h2>Ordini inviati</h2><div id="lista"><p class="empty">Nessun ordine.</p></div></section>
+<section>
+  <details id="imp"><summary>Impostazioni e sincronizzazione</summary>
+  <label for="waNum">Numero WhatsApp destinatario (con prefisso, es. 393331234567)</label><input id="waNum" inputmode="tel" placeholder="Vuoto = scegli il contatto in WhatsApp">
+  <label for="key">jsonbin.io – Master Key o Access Key</label><input id="key" type="password" autocomplete="off">
+  <label for="binId">jsonbin.io – Bin ID (stesso ID su Mac e iPhone; vuoto solo sul PRIMO dispositivo)</label><input id="binId" autocomplete="off">
+  <div class="row" style="margin-top:12px"><button id="salvaImp" class="sec" type="button">Salva impostazioni</button><button id="sync" type="button">Sincronizza ora</button></div>
+  <p class="status" id="stato3" role="status"></p></details>
+</section>
+</div>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const F={nome:$("nome"),tel:$("tel"),pct:$("pctNum"),tratt:$("tratt"),trattTxt:$("trattTxt"),qta:$("qta"),note:$("note")};
+const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let ordini=ld("gplOrdini",[]),eliminati=ld("gplDel",[]),cfg=ld("gplCfg",{wa:"",key:"",bin:""});
+const salvaTutto=()=>{sv("gplOrdini",ordini);sv("gplDel",eliminati);sv("gplCfg",cfg)};
+
+/* Serbatoio */
+function setPct(v){v=Math.max(0,Math.min(100,Number(v)));if(isNaN(v))return;$("pct").value=v;F.pct.value=v;drawTank()}
+function drawTank(){const v=F.pct.value;if(v===""){$("fill").style.width="0";$("pctLbl").textContent="—";return}
+$("fill").style.width=v+"%";$("pctLbl").textContent=v+" %";$("tank").classList.toggle("low",Number(v)<20)}
+$("pct").addEventListener("input",e=>{F.pct.value=e.target.value;drawTank()});
+F.pct.addEventListener("input",()=>{if(F.pct.value!=="")$("pct").value=F.pct.value;drawTank()});
+F.tratt.addEventListener("change",()=>{F.trattTxt.style.display=F.tratt.value==="si"?"block":"none"});
+
+/* Interpretazione del testo dettato */
+const CIFRE={zero:0,uno:1,una:1,due:2,tre:3,quattro:4,cinque:5,sei:6,sette:7,otto:8,nove:9};
+const STOP=/^(telefono|tel|numero|cellulare|serbatoio|ordina|ordine|note|nota|sconto|prezzo|litri|trattativa|percentuale|al|ha|vuole|e|ed)$/i;
+const cap=s=>s.replace(/(^|\s)(\p{L})/gu,(m,a,b)=>a+b.toUpperCase());
+const num=s=>parseFloat(String(s).replace(",","."));
+function interpreta(testo){
+ const out={};let t=" "+testo.replace(/\s+/g," ").trim()+" ",m;
+ m=t.match(/\b(?:note|nota)\b[:,]?\s+(.+)$/i);
+ if(m){out.note=m[1].trim().replace(/^./,c=>c.toUpperCase());t=t.slice(0,m.index)+" "}
+ let tel=null;
+ m=t.match(/(?:\+?39[\s.-]?)?\b\d(?:[\s.-]?\d){7,11}\b/);
+ if(m){tel=m[0].replace(/[^\d+]/g,"");t=t.replace(m[0]," ")}
+ else{const w=Object.keys(CIFRE).join("|");m=t.match(new RegExp("\\b(?:(?:"+w+")\\s+){6,}(?:"+w+")\\b","i"));
+  if(m){tel=m[0].toLowerCase().split(/\s+/).map(x=>CIFRE[x]).join("");t=t.replace(m[0]," ")}}
+ if(tel)out.tel=tel;
+ m=t.match(/[^.;,]*\b(?:sconto|trattativ\w*|prezzo|al litro|centesim\w*|€|euro)[^.;,]*/i);
+ if(m){out.trattTxt=m[0].trim().replace(/^(con|e|ed)\s+/i,"").replace(/^./,c=>c.toUpperCase());t=t.replace(m[0]," ")}
+ m=t.match(/(\d{1,3})\s*(?:%|per\s?cento|percento)/i)||t.match(/serbatoio\s+(?:al|a|è a|e a)?\s*(\d{1,3})\b/i);
+ if(m&&Number(m[1])<=100){out.pct=Number(m[1]);t=t.replace(m[0]," ")}
+ m=t.match(/(\d+(?:[.,]\d+)?)\s*(?:litri|litro|lt|l)\b/i)||t.match(/\b(?:ordina|ordine|vuole|mettere|carico di|caricare)\s+(?:di\s+)?(\d+(?:[.,]\d+)?)/i);
+ if(m){out.qta=num(m[1]);t=t.replace(m[0]," ")}
+ m=t.match(/\b(?:nominativo|cliente|nome|signor[ea]?|sig\.?ra?|sig\.?)\s+(.+)/i);
+ if(m){const p=[];for(const w of m[1].split(" ")){if(!w||STOP.test(w)||/\d/.test(w)||p.length>=4)break;p.push(w.replace(/[,.;:]$/,""));if(/[,.;:]$/.test(w))break}
+  if(p.length)out.nome=cap(p.join(" ").toLowerCase())}
+ return out}
+function applica(testo){
+ const r=interpreta(testo),tr=[];
+ const metti=(el,v,n)=>{el.value=v;el.classList.add("hl");tr.push(n);setTimeout(()=>el.classList.remove("hl"),2500)};
+ if(r.nome)metti(F.nome,r.nome,"nominativo");if(r.tel)metti(F.tel,r.tel,"telefono");
+ if(r.pct!=null){setPct(r.pct);tr.push("serbatoio")}
+ if(r.trattTxt){F.tratt.value="si";F.trattTxt.style.display="block";metti(F.trattTxt,r.trattTxt,"trattativa")}
+ if(r.qta!=null)metti(F.qta,r.qta,"quantità");if(r.note)metti(F.note,r.note,"note");
+ $("stato").textContent=tr.length?"Compilati: "+tr.join(", ")+". Controlla prima di inviare.":"Nessun campo riconosciuto. Usa parole come cliente, telefono, serbatoio, ordina, note."}
+$("applica").onclick=()=>applica($("trascr").value);
+
+/* Microfono */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,attivo=false,base="";
+function fermaUI(){attivo=false;$("mic").classList.remove("on");$("mic").textContent="🎙️ Avvia registrazione"}
+$("mic").onclick=()=>{
+ if(!SR){$("stato").textContent="Dettatura non supportata qui. Usa Safari o Chrome, oppure il microfono della tastiera.";return}
+ if(attivo){rec.stop();return}
+ rec=new SR();rec.lang="it-IT";rec.continuous=true;rec.interimResults=true;
+ base=$("trascr").value?$("trascr").value.trim()+" ":"";
+ rec.onresult=e=>{let f="",t="";for(let i=0;i<e.results.length;i++)e.results[i].isFinal?f+=e.results[i][0].transcript+" ":t+=e.results[i][0].transcript;$("trascr").value=base+f+t};
+ rec.onerror=e=>{$("stato").textContent=({"not-allowed":"Microfono negato: consentilo nelle impostazioni del browser.","service-not-allowed":"Microfono non consentito: apri la pagina da un indirizzo https.","no-speech":"Nessun parlato rilevato.","audio-capture":"Microfono non trovato."})[e.error]||"Errore: "+e.error};
+ rec.onend=()=>{fermaUI();if($("trascr").value.trim())applica($("trascr").value)};
+ try{rec.start();attivo=true;$("mic").classList.add("on");$("mic").textContent="⏹️ Ferma e compila";$("stato").textContent="Sto ascoltando…"}catch(e){fermaUI()}};
+
+/* Reset */
+function reset(){Object.values(F).forEach(el=>el.value="");F.tratt.value="no";F.trattTxt.style.display="none";$("pct").value=0;drawTank();$("trascr").value="";$("stato").textContent="";$("stato2").textContent=""}
+$("reset").onclick=reset;
+
+/* WhatsApp */
+const testoOrdine=o=>`*Ordine GPL* – ${o.data}\nCliente: ${o.nome||"-"}\nTel: ${o.tel||"-"}\nSerbatoio: ${o.pct||"?"}%\nQuantità: ${o.qta} litri`+(o.tratt?`\nTrattativa prezzo: ${o.tratt}`:"")+(o.note?`\nNote: ${o.note}`:"");
+function apriWA(o){const n=(cfg.wa||"").replace(/\D/g,"");const u="https://wa.me/"+n+"?text="+encodeURIComponent(testoOrdine(o));
+ if(!window.open(u,"_blank"))location.href=u}
+$("invia").onclick=()=>{
+ const o={id:Date.now(),data:new Date().toLocaleString("it-IT"),nome:F.nome.value.trim(),tel:F.tel.value.trim(),pct:F.pct.value,tratt:F.tratt.value==="si"?(F.trattTxt.value.trim()||"Sì"):"",qta:F.qta.value,note:F.note.value.trim()};
+ if(!o.nome&&!o.tel){$("stato2").textContent="Inserisci almeno nominativo o telefono.";return}
+ if(!o.qta){$("stato2").textContent="Indica la quantità ordinata.";return}
+ ordini.unshift(o);salvaTutto();disegna();apriWA(o);reset();$("stato2").textContent="Ordine inviato e salvato.";sync(true)};
+
+/* Elenco */
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function disegna(){const L=$("lista");if(!ordini.length){L.innerHTML='<p class="empty">Nessun ordine.</p>';return}
+ L.innerHTML=ordini.map(o=>`<div class="ord"><div class="top"><strong>${esc(o.nome||"Senza nome")} · ${esc(o.qta)} l</strong><span><button class="sec small" data-w="${o.id}">Reinvia</button> <button class="sec small" data-d="${o.id}">Elimina</button></span></div><p>${esc(o.data)} – ${o.tel?"Tel "+esc(o.tel):"senza telefono"} – serbatoio ${esc(o.pct||"?")}%</p>${o.tratt?"<p>Trattativa: "+esc(o.tratt)+"</p>":""}${o.note?"<p>Note: "+esc(o.note)+"</p>":""}</div>`).join("")}
+$("lista").addEventListener("click",e=>{const d=e.target.dataset.d,w=e.target.dataset.w;
+ if(d){ordini=ordini.filter(o=>String(o.id)!==d);eliminati.push(Number(d));salvaTutto();disegna();sync(true)}
+ if(w)apriWA(ordini.find(o=>String(o.id)===w))});
+
+/* Impostazioni e jsonbin.io */
+$("waNum").value=cfg.wa;$("key").value=cfg.key;$("binId").value=cfg.bin;
+function leggiImp(){cfg={wa:$("waNum").value.trim(),key:$("key").value.trim(),bin:$("binId").value.trim()};salvaTutto()}
+$("salvaImp").onclick=()=>{leggiImp();$("stato3").textContent="Impostazioni salvate."};
+const msg3=t=>$("stato3").textContent=t;
+async function jb(method,path,body,extra){
+ const prova=async h=>{const r=await fetch("https://api.jsonbin.io/v3/b"+path,{method,headers:Object.assign({"Content-Type":"application/json",[h]:cfg.key},extra||{}),body:body?JSON.stringify(body):undefined});
+  let j={};try{j=await r.json()}catch(e){}return {r,j}};
+ const ordine=cfg.hdr==="X-Access-Key"?["X-Access-Key","X-Master-Key"]:["X-Master-Key","X-Access-Key"];
+ let ris=await prova(ordine[0]);
+ if(ris.r.status===401||ris.r.status===403){const alt=await prova(ordine[1]);if(alt.r.ok){ris=alt;cfg.hdr=ordine[1];salvaTutto()}}
+ else if(ris.r.ok&&cfg.hdr!==ordine[0]){cfg.hdr=ordine[0];salvaTutto()}
+ if(!ris.r.ok){const s=ris.r.status;const e=new Error(s===401||s===403?"chiave non valida o senza permessi (servono lettura, modifica e creazione)":s===404?"Bin ID non trovato (controlla che sia identico sui due dispositivi)":"HTTP "+s+" "+(ris.j.message||""));throw e}
+ return ris.j}
+async function sync(silenzioso){
+ if(!cfg.key){if(!silenzioso)msg3("Inserisci la chiave jsonbin.io e salva.");return}
+ try{
+  if(!silenzioso)msg3("Sincronizzazione in corso…");
+  let remoto={ordini:[],eliminati:[]};
+  if(!cfg.bin){const c=await jb("POST","",{ordini,eliminati},{"X-Bin-Private":"true","X-Bin-Name":"ordini-gpl"});cfg.bin=c.metadata.id;$("binId").value=cfg.bin;salvaTutto();msg3("Bin creato. ID da inserire sull’altro dispositivo: "+cfg.bin+" – poi premi Sincronizza ora anche lì.");return}
+  const g=await jb("GET","/"+cfg.bin+"/latest");remoto=g.record||remoto;
+  const del=new Set([...(eliminati||[]),...(remoto.eliminati||[])]);
+  const mappa=new Map();[...(remoto.ordini||[]),...ordini].forEach(o=>{if(!del.has(o.id))mappa.set(o.id,o)});
+  ordini=[...mappa.values()].sort((a,b)=>b.id-a.id);eliminati=[...del];salvaTutto();disegna();
+  await jb("PUT","/"+cfg.bin,{ordini,eliminati});
+  msg3("Sincronizzato alle "+new Date().toLocaleTimeString("it-IT")+" – "+ordini.length+" ordini.")
+ }catch(e){msg3("Sincronizzazione non riuscita: "+(e instanceof TypeError?"nessuna connessione o richiesta bloccata dal browser (apri la pagina da https, non da file locale)":e.message))}}
+$("sync").onclick=()=>{leggiImp();sync(false)};
+document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter")$("invia").click()});
+drawTank();disegna();if(cfg.key&&cfg.bin)sync(true);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&cfg.key&&cfg.bin)sync(true)});
+setInterval(()=>{if(!document.hidden&&cfg.key&&cfg.bin)sync(true)},60000);
+</script>
+</body>
+</html>
